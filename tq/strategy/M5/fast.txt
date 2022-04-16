@@ -1,0 +1,28 @@
+from datetime import datetime, date
+from tqsdk import TqApi, TargetPosTask,TqBacktest,TqAuth,TqSim
+from tqsdk.algorithm.twap import Twap
+from tqsdk.ta import MA,EMA
+from tqsdk.tafunc import ma,ema,abs,std, hhv, llv, time_to_datetime, count, barlast
+from numpy.lib.stride_tricks import as_strided as stride
+import pandas as pd
+import numpy as np
+import talib as ta
+import time
+from functools import wraps
+
+data_len = 200
+CONST_SYMBOL= "KQ.m@SHFE.rb"  # 合约代码
+# SYMBOL = "SHFE.rb2110"  
+api = TqApi(TqSim(init_balance=100000), auth=TqAuth("天勤123", "tianqin123"))
+quote = api.get_quote(CONST_SYMBOL)
+
+SYMBOL = quote.underlying_symbol
+acct = api.get_account()
+position = api.get_position(SYMBOL)
+risk = api.get_risk_management_data(SYMBOL)
+target_pos = TargetPosTask(api, SYMBOL)
+
+klines_m5 = api.get_kline_serial(SYMBOL, 60*5, data_len) 
+
+orders5 = api.insert_order(SYMBOL, direction="BUY", offset="OPEN", volume=1,limit_price = 5530) 
+orders = api.get_order(account='TqSim')

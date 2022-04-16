@@ -1,0 +1,157 @@
+# 没有用到移动窗口
+
+def get_signal(kline):
+    """
+    仓位管理
+    空头启动
+        short 初始仓位 半仓, 设止损，不设止盈
+    空头加速
+        addShort 加仓 50% 则为全仓, 设止损，不设止盈
+    ['strategy_name', 'direction', 'cang_wei', 'stop_loss', 'stop_win', 'style']
+    style:
+        zd
+        long
+        short
+        fantan
+        huicai
+    bsp_ratio
+        如果在趋势市场 bias0<0.4 bsp_ratio>2.1 不需要平仓
+
+    bias 止盈
+        qsjs 趋势加速 bias0>1.5% bsp_ratio>2.1 立刻平仓
+
+    """
+    ##################################################### 多头趋势类交易 #####################################################
+    ##########################
+    ######  dtqd 多头启动 ######
+    ##########################
+    ## 强势上涨回调后 重度bsp  回调近ma0 开重仓long信号 通常为空头转多头，多头大阳袭击， 空头反击无力 博弈点
+    if (kline.trend_stage == 'dtqd') & (kline.bsp_class == 2) & (-1 <= kline.bias0) & (kline.bias0 <= 2) & \
+            (kline.slp0 > 999.90) & (kline.df_01 > kline.df_12) & (kline.zdStrength_prev < 0) & \
+            (kline.vol_momt == 2) & (kline.vol_cp_20d >= 1):
+        return 'dtqd_byd2', 'BUY', kline.close, 1, kline.close - kline.ma_body - (kline.ma_Us + kline.Ls) / 2, 0, 0
+
+    ##########################
+    ######  dtjs 多头加速 ######
+    ##########################
+
+
+    ##################################################### 空头趋势类交易 #####################################################
+    ###########################
+    ######  ktqd 空头启动 ######
+    ###########################
+    # 强势下跌反弹后 重度滞涨 靠近ma0 开重仓short信号 通常为多头转空头，空头突袭大阴，多头反攻无力
+    elif (kline.trend_stage == 'ktqd') & (kline.bsp_class == 2) & (-2 <= kline.bias0) & (kline.bias0 <= 1) \
+            & (kline.slp0 < 1000.1) & (kline.df_01 < kline.df_12) & (kline.zdStrength_prev < -1) & \
+            (kline.vol_momt == 2) & (kline.vol_cp_20d >= 1):
+        return 'ktqd_byd2', 'SELL', kline.close, 1, kline.close + kline.ma_body + (kline.ma_Us + kline.Ls) / 2, 0, 0
+    # ## 中度卖压 开半仓信号, 中等滞涨 靠近ma0  以价格设止损 需要跟踪 update stop_loss，不设止盈
+    elif (kline.trend_stage == 'ktqd') & (kline.bsp_class == 1) & (-2 < kline.bias0) & (kline.bias0 <= 1) & \
+            (kline.slp0 <= 1000) & (kline.df_01 < kline.df_12) & (kline.zdStrength_prev > 1) & \
+            (kline.vol_momt == 2) & (kline.vol_cp_20d >= 1):
+        # & ((kline.zdStrength < kline.zdStrength_prev) | (kline.volume > kline.vol_prev)):
+        return 'ktqd_byd1', 'SELL', kline.close, 0.5, kline.close + kline.ma_body + (kline.ma_Us + kline.Ls) / 2, 0, 0
+
+    # #########################
+    # ######  ktjs 空头加速 ######
+    # #########################
+    ## 震荡超卖 重度买压 15/1000=0.015, 1.5% over sell, cang_wei = 0, mean close short, 趋势加速有时效性
+    elif ((kline.trend_stage == 'ktjs') & (kline.bsp_class == 2) & (kline.bias1 >= -6) & (kline.bias0 <= -4) \
+          & (kline.zdStrength_prev < -1.5) & (kline.df_01 < kline.df_12) & (kline.vol_momt == 2)):
+        return 'ktjs_byd2', 'SELL', kline.close, 1, kline.ma0 * 0.004, kline.ma0 * 0.004, 3
+    # # 重度卖压 开重仓信号 加仓 或 全仓信号, <0.7 :  以ma0设止损，不设止盈
+    elif (kline.trend_stage == 'ktjs') & (kline.bsp_class == -1) & (kline.bias1 >= -4) & (kline.bias1 <= -9) & \
+            (kline.zdStrength < -1) & (kline.zdStrength_prev < 1) & (-kline.zdStrength > kline.zdStrength_prev) & \
+            (kline.df_01 < kline.df_12) & (kline.slp0 < kline.slp1) & (kline.high >= kline.ma0) & (kline.vol_momt == 2):
+        return 'ktqd_s3', 'SELL', kline.close, 1, kline.ma0 + kline.ma_body + kline.ma_Us, 0, 3
+
+
+    ##################################################### 超卖类交易 #####################################################
+    # #震荡超卖 重度买压 15/1000=0.015, 1.5% over sell, cang_wei = 0, mean close short, 趋势加速有时效性
+    elif ((kline.trend_stage == 'ktqd') & (kline.bsp_class == 2) & (kline.bias1 <= -6) & (kline.zdStrength > 0) & (
+            kline.cdlUs / kline.ma_Us >= 2)):
+        temp = kline.close - kline.ma_body - (kline.ma_Us + kline.ma_Ls) / 2
+        stop_loss = min(temp, kline.ma0 * 0.003)
+        return 'ktjs_os_byd2', 'BUY', kline.close, 0.5, stop_loss, kline.ma0 * 0.004, 3
+
+    # ## 空头加速超卖 重度买卖压，反向开仓 超跌 止跌  此信号 需要确保stop_loss未到跌停
+    elif ((kline.trend_stage == 'ktjs') & (kline.bsp_class == 2) & (kline.bias0 < -15) & (kline.zdStrength_prev <= -3)):
+        temp = kline.close - kline.ma_body - (kline.ma_Us + kline.ma_Ls) / 2
+        stop_loss = min(temp, kline.ma0 * 0.003)
+        return 'ktjs_b1', 'BUY', kline.close, 0.5, kline.close - kline.ma_body - (
+                    kline.ma_Us + kline.ma_Ls) / 2, kline.close * 0.006, 0
+
+    ##################################################### 超买类交易 #####################################################
+    #elif (kline.trend_stage == 'jmkt') & (kline.bsp_class == 2) & (kline.net_strength_1_s>0) & (kline.pct_chg > 2)
+
+    ##################################################### 震荡类做多 #####################################################
+
+    ##################################################### 震荡类做空 #####################################################
+
+    ##################################################### 平仓类交易 #####################################################
+    # ## 绝对止盈 空头加速 急速下跌 大幅偏离 立即止盈 不开反手
+    elif (kline.trend_stage == 'ktjs') & (kline.bias0 < -15) & (kline.vol_cp == 2):
+        return 'ktjs_b2', 'BUY', kline.close, 0, 0, 0, 0
+
+    # ## 空头加速 急速下跌 未到超卖 出现重度买卖压 之需要调低止损 而不需要平仓
+    # ## 急速下跌 止损0.5% 快速下跌 止损 0.4% 慢速下跌 0.3%
+    # elif (kline.trend_stage == 'ktjs') & (kline.ma_slp0 < 998)  & (kline.bsp_class == 2):
+    #     return 'ktjs_kp','noAction', 0, 0, kline.close*1.005, 0, 0
+    # ## 空头加速 重度卖压
+    # elif (kline.trend_stage == 'ktjs') & (kline.bsp_class == 2) & (-2< kline.bias0) & (kline.bias0 < 1):
+    #     return 'ktjs_s1', 'SELL', kline.close, 1, kline.close + kline.ma_body + (kline.ma_Us + kline.ma_Ls)/2, 0, 0
+    # ## 空头加速 中度卖压
+    # elif (kline.trend_stage == 'ktjs') & (kline.bsp_class == 1) & (-2< kline.bias0) & (kline.bias0 < 1):
+    #     return 'ktjs_s2','SELL', kline.close, 0.5, 0, 0, 0
+    # # 空头加速 急速下跌  快速反弹， 做空 止损 0.5% 止盈 1.1%
+    # elif (kline.trend_stage == 'ktjs') & (kline.ma_slp0 < 998) :
+    #     return 'ktjs_s3', 'SELL', kline.predict_ma0, 0.5, kline.predict_ma0*1.005, kline.predict_ma0*0.989, 0
+    # #########################
+    # ######  dtjs 多头加速 ######
+    # #########################
+    # elif (kline.trend_stage == 'dtjs') & kline.jl & (kline.bsp_class == 2) & (kline.bias0 <= 5) & (kline.)
+    #     return 'jmklzd','noAction',0, 0, 0, 0, 0
+
+    # ###############################
+    # ######  dtbc 多头保持（减弱）######
+    # ###############################
+    # ## 多头保持，大周期是反弹
+    # elif (kline.trend_stage == 'dtbc') & kline.dl & (kline.bsp_class == 2) & (kline.ma_slp0 <= kline.ma_slp1) & (kline.cdlUs > kline.ma_Us * 2) \
+    #         & (kline.bias0 < 3):
+    #     return 'dtbc_s1', 'SELL', kline.close*1.0008, 0.5, kline.close*1.0008 + kline.ma_body + (kline.ma_Us + kline.ma_Ls)/2, 0
+
+    # ###########################
+    # ######  jmkl 紧密靠拢 ######
+    # ###########################
+    # #紧密靠拢 重度买卖压 超卖 LH_SIGNAL: JMKL_OS
+    # elif kline.jmkl & (kline.slp1 >= 999) & (kline.bias1 <= -4) & (kline.bsp_class == 2) & kline.last_k_fl:
+    #     return 'jmkl_os', 'BUY', kline.close, 0.5, kline.close*0.997, kline.close*1.004, 0
+
+    # # 紧密靠拢 重度买卖压 超买 LH_SIGNAL: JMKL_OB
+    # elif kline.jmkl & (kline.slp1 <=1001) & (kline.bias1 >=4) & (kline.bsp_class == 2) \
+    #         & kline.last_k_fl & (kline.zdStrength <= 1) & (kline.mv1 <= kline.mv3*1.1) & (kline.dl_5d < 2):
+    #     return 'jmkl_ob', 'SELL', kline.close, 0.5, kline.close*1.003, kline.close*0.996
+
+    # #####################
+    # ######  jmklzd ######
+    # #####################
+    # # # 放量
+    # elif (kline.trend_stage == 'jmklzd') & (kline.jltj >= 1) & (kline.dltj >= 2) & (kline.mv1 > kline.mv3):
+    #     return 'jmklzd','noAction',0, 0, 0, 0, 0
+
+    # #####################
+    # ######  ssklpd ######
+    # #####################
+    # ## 松散多头偏多 准备突破
+    # elif (kline.trend_stage == 'ssklpd') & (kline.slp3 >= 1000) & (kline.slp2 >= 1000) & (kline.bsp_class == 1):
+    #     return 'ssklpd_brk','BUY',  kline.close, 0.5, kline.close - kline.ma_body - (kline.ma_Us + kline.ma_Ls)/2, 0
+    # ## 松散靠拢多头 回踩ma3 ma4为参考 多头回调
+    # elif (kline.trend_stage == 'ssklpd') & (kline.slp3 >= 1000) & (kline.slp2 >= 1000) & (-1 <= kline.bias3) & (kline.bias3 < 1) \
+    #         & (kline.df_23 < kline.df_34) & (kline.df_23 > kline.ma3*0.005):
+    #     return 'ssklpd_ht','BUY',kline.close, 1, kline.close - kline.ma_body - (kline.ma_Us + kline.ma_Ls)/2, 0
+    # #####################
+    # ######  ssklpk ######
+    # #####################
+    # # elif :
+    else:
+        return 'noStage', np.nan, 0, 0, 0, 0, 0
