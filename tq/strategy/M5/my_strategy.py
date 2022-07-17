@@ -8,7 +8,7 @@ from my_func import *
 import pandas as pd
 import numpy as np
 
-sys.path.append('D:\\BaiduNetdiskDownload\\Quants\\tq\\strategy\\M5')
+# sys.path.append('D:\\BaiduNetdiskDownload\\Quants\\tq\\strategy\\M5')
 multiZF = 8  # 均线靠拢的放到系数 [1,30] %10 - 300%
 inc_body1_4 = 4  # ma_kl1_4 4均线靠拢 增量参数  base 10 5就是增加50%
 inc_body1_3 = 4  # ma_kl1_3 3均线靠拢 增量参数  base 10 5就是增加50%
@@ -432,7 +432,6 @@ def get_stage(kline):
         return 'kzj12'  # 空中继12
     elif kline.ktxt & (kline.bias4 >= 0.5):
         return 'overbuy'
-    elif :
     else:
         return 'others'
 
@@ -525,8 +524,8 @@ def get_kt_stage(kline):
         return 'overbuy'
     elif kline.jmkl:
         return 'jmkl'
-    else kline.dtxt:
-        return 'dtxt'
+    # else kline.dtxt:
+    #     return 'dtxt'
 
 def get_kl_stage(kline):
     if kline.jmkl & kline.dtpl & (kline.bias1 >= 0.5) & (kline.ma_2_slp0 >= 0) :
