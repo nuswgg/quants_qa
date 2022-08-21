@@ -132,12 +132,14 @@ while True:
 
         # # #开多仓条件
         # # # 交易时间 & 没有冻结资金 - 没有仓位  应该可以没有 (position.pos_long == 0)
-        ## 没有未成绩单, 没有仓位
+        ## 没有未成交单, 没有仓位
     if (base_data.direction.iloc[-2] != 'noAction') & (acct.frozen_margin == 0) & (acct.risk_ratio == 0) & (last_kline(klines_m5,quote)==False):
-        open_pos(base_data)
-        #有仓位 有新的开仓信号
-    elif (acct.risk_ratio != 0) & ():
+        pass
+        # open_pos(base_data)
 
+        #有仓位 有新的开仓信号
+    elif (acct.risk_ratio != 0) & (base_data.direction.iloc[-2] != 'noAction'):
+        pass
         # ## 最后根K线，不可以交易
         # if (base_data.direction.iloc[-2] == 'SELL') & (acct.frozen_margin == 0) & (last_kline(klines_m5,quote)==False):
         #     vol_avail = round(acct.available * volume_multiple / (margin * price))  # 用定制的margin来计算 可开仓
@@ -160,10 +162,11 @@ while True:
         #     print(datetime(*structTime[:6]).strftime('%Y-%m-%d %H:%M:%S') + ' Buy %d, 止损 %d' %(BUY_PRICE, STOP_LOSS_PRICE) )
         #     api.cancel_orde()
 
+    # 有未成交单
     if acct.frozen_margin != 0:
         print('got position')
         # 任何tick都计算 STOP_LOSS_PRICE 满足条件就平仓
-        STOP_LOSS_PRICE = price_stop_loss(base_data, STOP_LOSS_PRICE)
+        # STOP_LOSS_PRICE = price_stop_loss(base_data, STOP_LOSS_PRICE)
 
     # # 平多仓条件 价格止损
     # if api.is_changing(quote, "last_price") & (position.pos_long > 0) & (quote.last_price<= STOP_LOSS_PRICE):

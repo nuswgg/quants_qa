@@ -10,9 +10,9 @@ __author__ = 'limin'
 
 import json
 import time
-from tqsdk import TqApi, TqAuth, TargetPosTask
+from tqsdk import TqApi, TqAuth, TargetPosTask,TqSim,TqBacktest
 from tqsdk.ta import ATR
-
+from datetime import datetime, date
 
 class Turtle:
     def __init__(self, symbol, account=None, auth=None, donchian_channel_open_position=20,
@@ -35,7 +35,11 @@ class Turtle:
         self.donchian_channel_high = 0  # 唐奇安通道上轨
         self.donchian_channel_low = 0  # 唐奇安通道下轨
 
-        self.api = TqApi(self.account, auth=self.auth)
+        # self.api = TqApi(self.account, auth=self.auth)
+        self.api = TqApi(TqSim(init_balance=100000),
+                    backtest=TqBacktest(start_dt=date(2021, 3, 27), end_dt=date(2021, 4, 2)),
+                    web_gui="http://192.168.1.4:9876", auth=TqAuth("天勤123", "tianqin123"))
+
         self.quote = self.api.get_quote(self.symbol)
         # 由于ATR是路径依赖函数，因此使用更长的数据序列进行计算以便使其值稳定下来
         kline_length = max(donchian_channel_open_position + 1, donchian_channel_stop_profit + 1, atr_day_length * 5)
@@ -123,7 +127,7 @@ class Turtle:
             self.try_close()
 
 
-turtle = Turtle("SHFE.au2105")
+turtle = Turtle("SHFE.rb2210")
 print("策略开始运行")
 try:
     turtle.state = json.load(open("turtle_state.json", "r"))  # 读取数据: 本策略目标净持仓数,上一次开仓价
