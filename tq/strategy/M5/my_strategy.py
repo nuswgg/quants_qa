@@ -609,17 +609,19 @@ def calc_base_data(klines):
     klinesC['abs_zdf'] = abs(klinesC.zdf)
     klinesC['cdlBody'] = klinesC.close - klinesC.open
     klinesC['abs_body'] = abs(klinesC.cdlBody)
-    klinesC['pct_body'] = round((klinesC.close / klinesC.open - 1) * 1000, 2)
+    klinesC['top_body'] = max(klinesC.close, klinesC.open)
+    klinesC['button_body'] = min(klinesC.close, klinesC.open)
+    klinesC['pct_body'] = round(klinesC.abs_body / klinesC.c_prev * 1000, 2) #k线实体的振幅
     klinesC['cdlHL'] = klinesC.high - klinesC.low  # k线的 full length = H - L
-    klinesC['pct_HL'] = klinesC.cdlHL / klinesC.c_prev * 1000
+    klinesC['pct_HL'] = klinesC.cdlHL / klinesC.c_prev * 1000  # K线的振幅
     klinesC['cdlHO'] = klinesC.high - klinesC.open  # 可以作为 多头
     klinesC['cdlHC'] = klinesC.high - klinesC.close  # 可以作为空头
-    klinesC['cdlUs'] = klinesC[['cdlHC', 'cdlHO']].min(axis=1)  # upper shadow
-    klinesC['pct_Us'] = klinesC.cdlUs / klinesC.close * 1000
+    klinesC['cdlUs'] = klinesC[['cdlHC', 'cdlHO']].min(axis=1)  # 上影线upper shadow
+    klinesC['pct_Us'] = klinesC.cdlUs / klinesC.close * 1000  #上影线振幅
     klinesC['cdlLO'] = klinesC.open - klinesC.low  # 可以作为 空头
     klinesC['cdlLC'] = klinesC.close - klinesC.low  #
-    klinesC['cdlLs'] = klinesC[['cdlLO', 'cdlLC']].min(axis=1)  # lower shadow
-    klinesC['pct_Ls'] = klinesC.cdlLs / klinesC.close * 1000
+    klinesC['cdlLs'] = klinesC[['cdlLO', 'cdlLC']].min(axis=1)  # 下影线 lower shadow
+    klinesC['pct_Ls'] = klinesC.cdlLs / klinesC.close * 1000 #下影线振幅
 
     ###############################################################
     # klinesC['body_rng'] = klinesC.bodyU - klinesC.bodyD  # K线 波动range refer to abs_zdf
