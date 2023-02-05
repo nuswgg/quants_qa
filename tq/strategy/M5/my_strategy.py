@@ -989,7 +989,7 @@ def calc_base_data(klines):
     # klinesC['predict_c'] = klinesC.close.shift(1) + (klinesC.ma_body.shift(1) + abs(klinesC.cdlBody.shift(1)))*klinesC.direction.shift(1)/2
     # klinesC['predict_body_h'] = klinesC.apply(lambda row:get_cdl_body_h(row),axis=1)
     # klinesC['predict_body_l'] = klinesC.apply(lambda row:get_cdl_body_l(row),axis=1)
-    # klinesC['predict_h'] = klinesC.predict_body_h + (klinesC.cdlUs.shift(1) + klinesC.ma_Us.shift(1))/2
+    # klinesC['predict_h'] = klinesC.predict_body_h + (klinesC.cdlU s.shift(1) + klinesC.ma_Us.shift(1))/2
     # klinesC['predict_l'] = klinesC.predict_body_l - (klinesC.cdlLs.shift(1) + klinesC.ma_Ls.shift(1))/2
 
 
